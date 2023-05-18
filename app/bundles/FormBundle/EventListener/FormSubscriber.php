@@ -155,15 +155,15 @@ class FormSubscriber implements EventSubscriberInterface
         $lead      = $event->getSubmission()->getLead();
         $leadEmail = null !== $lead ? $lead->getEmail() : null;
         $ccEmails  = $bccEmails = [];
-        $emails    = $this->getEmailsFromString($config['to']);
+        $emails    = $this->getEmailsFromString($this->getResultTokenValue($config['to'] ?? '', $event->getResults()));
 
         if (isset($config['cc']) && '' !== $config['cc']) {
-            $ccEmails = $this->getEmailsFromString($config['cc']);
+            $ccEmails = $this->getEmailsFromString($this->getResultTokenValue($config['cc'], $event->getResults()));
             unset($config['cc']);
         }
 
         if (isset($config['bcc']) && '' !== $config['bcc']) {
-            $bccEmails = $this->getEmailsFromString($config['bcc']);
+            $bccEmails = $this->getEmailsFromString($this->getResultTokenValue($config['bcc'], $event->getResults()));
             unset($config['bcc']);
         }
 
@@ -434,5 +434,18 @@ class FormSubscriber implements EventSubscriberInterface
         if ($lead) {
             $this->mailer->setLead($lead->getProfileFields(), $internalSend);
         }
+    }
+
+    private function getResultTokenValue(string $string, array $fields): string
+    {
+        if (!preg_match('/{formfield=(.*?)}/', $string, $matches)) {
+            return $string;
+        }
+        $emailToken = $matches[1];
+        if (empty($fields[$emailToken])) {
+            return $string;
+        }
+
+        return $fields[$emailToken];
     }
 }

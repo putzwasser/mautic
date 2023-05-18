@@ -2,6 +2,7 @@
 
 namespace Mautic\FormBundle\Form\Type;
 
+use Mautic\CoreBundle\Form\ToBcBccFieldsCustomConstraintDTO;
 use Mautic\CoreBundle\Form\ToBcBccFieldsTrait;
 use Mautic\CoreBundle\Form\Type\YesNoButtonGroupType;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
@@ -14,6 +15,8 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\Translation\TranslatorInterface;
+use Symfony\Component\Validator\Constraints\Callback;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * Class SubmitActionEmailType.
@@ -157,8 +160,12 @@ class SubmitActionEmailType extends AbstractType
                 'multiple'   => false,
             ]
         );
+        $toBcBccFieldsCustomConstraint = new ToBcBccFieldsCustomConstraintDTO();
+        $toBcBccFieldsCustomConstraint->setToConstraint($this->getTokenOrEmailConstraint('to'));
+        $toBcBccFieldsCustomConstraint->setCcConstraint($this->getTokenOrEmailConstraint('cc'));
+        $toBcBccFieldsCustomConstraint->setBccConstraint($this->getTokenOrEmailConstraint('bcc'));
 
-        $this->addToBcBccFields($builder);
+        $this->addToBcBccFields($builder, $toBcBccFieldsCustomConstraint);
     }
 
     /**
@@ -172,5 +179,35 @@ class SubmitActionEmailType extends AbstractType
     public function buildView(FormView $view, FormInterface $form, array $options)
     {
         $view->vars['formFields'] = $this->getFormFields($options['attr']['data-formid']);
+    }
+
+    private function getTokenOrEmailConstraint(string $field): Callback
+    {
+        return new Callback([
+            'callback' => function ($value, ExecutionContextInterface $context) use ($field) {
+                if (preg_match('/{formfield=(.*?)}/', $value)) {
+                    return;
+                }
+
+                $validator = $context->getValidator();
+                $violations = $validator->validate(
+                    $value,
+                    [
+                        new \Symfony\Component\Validator\Constraints\Email(
+                            [
+                                'message' => 'mautic.core.email.required',
+                            ]
+                        ),
+                    ]
+                );
+
+                if (count($violations) > 0) {
+                    $string = (string) $violations;
+                    $context->buildViolation($string)
+                        ->atPath($field)
+                        ->addViolation();
+                }
+            },
+        ]);
     }
 }

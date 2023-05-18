@@ -8,7 +8,7 @@ use Symfony\Component\Validator\Constraints\Email;
 
 trait ToBcBccFieldsTrait
 {
-    protected function addToBcBccFields(FormBuilderInterface $builder)
+    protected function addToBcBccFields(FormBuilderInterface $builder, ?ToBcBccFieldsCustomConstraintDTO $toBcBccFieldsCustomConstraintDTO = null)
     {
         $builder->add(
             'to',
@@ -22,11 +22,11 @@ trait ToBcBccFieldsTrait
                     'tooltip'     => 'mautic.core.send.email.to.multiple.addresses',
                 ],
                 'required'    => false,
-                'constraints' => new Email(
-                    [
-                        'message' => 'mautic.core.email.required',
-                    ]
-                ),
+                'constraints' => $toBcBccFieldsCustomConstraintDTO && $toBcBccFieldsCustomConstraintDTO->getToConstraint() ? $toBcBccFieldsCustomConstraintDTO->getToConstraint() : new Email(
+                        [
+                            'message' => 'mautic.core.email.required',
+                        ]
+                    ),
             ]
         );
 
@@ -42,11 +42,11 @@ trait ToBcBccFieldsTrait
                     'tooltip'     => 'mautic.core.send.email.to.multiple.addresses',
                 ],
                 'required'    => false,
-                'constraints' => new Email(
-                    [
-                        'message' => 'mautic.core.email.required',
-                    ]
-                ),
+                'constraints' => $toBcBccFieldsCustomConstraintDTO && $toBcBccFieldsCustomConstraintDTO->getCcConstraint() ? $toBcBccFieldsCustomConstraintDTO->getCcConstraint() : new Email(
+                        [
+                            'message' => 'mautic.core.email.required',
+                        ]
+                    ),
             ]
         );
 
@@ -62,11 +62,11 @@ trait ToBcBccFieldsTrait
                     'tooltip'     => 'mautic.core.send.email.to.multiple.addresses',
                 ],
                 'required'    => false,
-                'constraints' => new Email(
-                    [
-                        'message' => 'mautic.core.email.required',
-                    ]
-                ),
+                'constraints' => $toBcBccFieldsCustomConstraintDTO && $toBcBccFieldsCustomConstraintDTO->getBccConstraint() ? $toBcBccFieldsCustomConstraintDTO->getBccConstraint() : new Email(
+                        [
+                            'message' => 'mautic.core.email.required',
+                        ]
+                    ),
             ]
         );
     }
