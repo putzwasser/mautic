@@ -141,3 +141,5 @@
 !/themes/blank-big.png
 
 /translations
+httpd_server.log
+php_errors.log
