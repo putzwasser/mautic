@@ -223,7 +223,6 @@ return [
                     'monolog.logger.mautic',
                     'mautic.campaign.scheduler',
                     'mautic.campaign.helper.removed_contact_tracker',
-                    'mautic.campaign.repository.lead',
                 ],
             ],
             'mautic.campaign.executioner.kickoff'     => [
@@ -362,6 +361,7 @@ return [
         ],
         'services' => [
             'mautic.campaign.service.campaign'=> [
+                /** @phpstan-ignore-next-line */
                 'class'     => \Mautic\CampaignBundle\Service\Campaign::class,
                 'arguments' => [
                     'mautic.campaign.repository.campaign',
@@ -378,8 +378,9 @@ return [
         ],
     ],
     'parameters' => [
-        'campaign_time_wait_on_event_false' => 'PT1H',
-        'campaign_use_summary'              => 0,
-        'campaign_by_range'                 => 0,
+        'campaign_time_wait_on_event_false'       => 'PT1H',
+        'campaign_use_summary'                    => 0,
+        'campaign_by_range'                       => 0,
+        'delete_campaign_event_log_in_background' => false,
     ],
 ];
