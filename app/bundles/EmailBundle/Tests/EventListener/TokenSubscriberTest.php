@@ -13,11 +13,13 @@ use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\MonitoredEmail\Mailbox;
 use Mautic\EmailBundle\Tests\Helper\Transport\SmtpTransport;
 use Mautic\LeadBundle\Entity\Lead;
+use Mautic\LeadBundle\Entity\LeadListRepository;
 use Mautic\LeadBundle\Helper\PrimaryCompanyHelper;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Mailer\Mailer;
+use Symfony\Component\Routing\RouterInterface;
 
 class TokenSubscriberTest extends \PHPUnit\Framework\TestCase
 {
@@ -38,6 +40,9 @@ class TokenSubscriberTest extends \PHPUnit\Framework\TestCase
         /** @var MockObject&LoggerInterface $logger */
         $logger = $this->createMock(LoggerInterface::class);
 
+        /** @var MockObject&RouterInterface $router */
+        $router = $this->createMock(RouterInterface::class);
+
         $mailHashHelper = new MailHashHelper($coreParametersHelper);
 
         $coreParametersHelper->method('get')
@@ -50,7 +55,7 @@ class TokenSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $tokens = ['{test}' => 'value'];
 
-        $mailHelper = new MailHelper($mockFactory, new Mailer(new SmtpTransport()), $fromEmailHelper, $coreParametersHelper, $mailbox, $logger, $mailHashHelper);
+        $mailHelper = new MailHelper($mockFactory, new Mailer(new SmtpTransport()), $fromEmailHelper, $coreParametersHelper, $mailbox, $logger, $mailHashHelper, $router);
         $mailHelper->setTokens($tokens);
 
         $email = new Email();
@@ -112,10 +117,11 @@ CONTENT
         $primaryCompanyHelper = $this->createMock(PrimaryCompanyHelper::class);
         $primaryCompanyHelper->method('getProfileFieldsWithPrimaryCompany')
             ->willReturn(['email' => 'hello@someone.com']);
+        $segmentRepository    = $this->createMock(LeadListRepository::class);
 
         /** @var TokenSubscriber $subscriber */
         $subscriber = $this->getMockBuilder(TokenSubscriber::class)
-            ->setConstructorArgs([$dispatcher, $primaryCompanyHelper])
+            ->setConstructorArgs([$dispatcher, $primaryCompanyHelper, $segmentRepository])
             ->onlyMethods([])
             ->getMock();
 

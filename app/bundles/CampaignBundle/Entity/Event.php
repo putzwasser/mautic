@@ -8,7 +8,9 @@ use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
 use Mautic\ApiBundle\Serializer\Driver\ApiMetadataDriver;
 use Mautic\CoreBundle\Doctrine\Mapping\ClassMetadataBuilder;
+use Mautic\CoreBundle\Validator\EntityEvent;
 use Mautic\LeadBundle\Entity\Lead as Contact;
+use Symfony\Component\Validator\Mapping\ClassMetadata;
 
 class Event implements ChannelInterface
 {
@@ -161,6 +163,8 @@ class Event implements ChannelInterface
 
     private ?\DateTimeInterface $deleted = null;
 
+    private int $failedCount = 0;
+
     public function __construct()
     {
         $this->log      = new ArrayCollection();
@@ -290,6 +294,10 @@ class Event implements ChannelInterface
             ->columnName('channel_id')
             ->nullable()
             ->build();
+
+        $builder->createField('failedCount', 'integer')
+            ->columnName('failed_count')
+            ->build();
     }
 
     /**
@@ -353,9 +361,9 @@ class Event implements ChannelInterface
                      'triggerInterval',
                      'triggerIntervalUnit',
                      'triggerHour',
-                    'triggerRestrictedStartHour',
-                    'triggerRestrictedStopHour',
-                    'triggerRestrictedDaysOfWeek',
+                     'triggerRestrictedStartHour',
+                     'triggerRestrictedStopHour',
+                     'triggerRestrictedDaysOfWeek',
                      'triggerMode',
                      'children',
                      'parent',
@@ -394,6 +402,11 @@ class Event implements ChannelInterface
                 ]
             )
              ->build();
+    }
+
+    public static function loadValidatorMetadata(ClassMetadata $metadata): void
+    {
+        $metadata->addConstraint(new EntityEvent());
     }
 
     /**
@@ -1047,5 +1060,10 @@ class Event implements ChannelInterface
     public function isDeleted(): bool
     {
         return !is_null($this->deleted);
+    }
+
+    public function getFailedCount(): int
+    {
+        return $this->failedCount;
     }
 }

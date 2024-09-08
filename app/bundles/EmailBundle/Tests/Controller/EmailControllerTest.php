@@ -16,6 +16,8 @@ use Mautic\EmailBundle\Controller\EmailController;
 use Mautic\EmailBundle\Entity\Email;
 use Mautic\EmailBundle\Model\EmailModel;
 use Mautic\FormBundle\Helper\FormFieldHelper;
+use Mautic\LeadBundle\Model\FieldModel;
+use Mautic\LeadBundle\Model\LeadModel;
 use Mautic\UserBundle\Entity\User;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\DependencyInjection\Container;
@@ -33,64 +35,64 @@ class EmailControllerTest extends \PHPUnit\Framework\TestCase
     /**
      * @var MockObject|Translator
      */
-    private \PHPUnit\Framework\MockObject\MockObject $translatorMock;
+    private MockObject $translatorMock;
 
     /**
      * @var MockObject|Session
      */
-    private \PHPUnit\Framework\MockObject\MockObject $sessionMock;
+    private MockObject $sessionMock;
 
     /**
      * @var MockObject|ModelFactory<EmailModel>
      */
-    private \PHPUnit\Framework\MockObject\MockObject $modelFactoryMock;
+    private MockObject $modelFactoryMock;
 
     /**
      * @var MockObject|Container
      */
-    private \PHPUnit\Framework\MockObject\MockObject $containerMock;
+    private MockObject $containerMock;
 
     /**
      * @var MockObject|Router
      */
-    private \PHPUnit\Framework\MockObject\MockObject $routerMock;
+    private MockObject $routerMock;
 
     /**
      * @var MockObject|EmailModel
      */
-    private \PHPUnit\Framework\MockObject\MockObject $modelMock;
+    private MockObject $modelMock;
 
     /**
      * @var MockObject|Email
      */
-    private \PHPUnit\Framework\MockObject\MockObject $emailMock;
+    private MockObject $emailMock;
 
     /**
      * @var MockObject|FlashBag
      */
-    private \PHPUnit\Framework\MockObject\MockObject $flashBagMock;
+    private MockObject $flashBagMock;
 
-    private \Mautic\EmailBundle\Controller\EmailController $controller;
+    private EmailController $controller;
 
     /**
      * @var MockObject|CorePermissions
      */
-    private \PHPUnit\Framework\MockObject\MockObject $corePermissionsMock;
+    private MockObject $corePermissionsMock;
 
     /**
      * @var MockObject|FormFactory
      */
-    private \PHPUnit\Framework\MockObject\MockObject $formFactoryMock;
+    private MockObject $formFactoryMock;
 
     /**
      * @var MockObject|Form
      */
-    private \PHPUnit\Framework\MockObject\MockObject $formMock;
+    private MockObject $formMock;
 
     /**
      * @var MockObject|Environment
      */
-    private \PHPUnit\Framework\MockObject\MockObject $twigMock;
+    private MockObject $twigMock;
 
     private RequestStack $requestStack;
 
@@ -227,11 +229,6 @@ class EmailControllerTest extends \PHPUnit\Framework\TestCase
         $this->containerMock->method('has')->willReturnCallback($serviceExists);
         $this->containerMock->method('get')->willReturnMap($services);
 
-        $this->modelFactoryMock->expects($this->once())
-            ->method('getModel')
-            ->with('email')
-            ->willReturn($this->modelMock);
-
         $this->modelMock->expects($this->once())
             ->method('getEntity')
             ->with(1)
@@ -272,6 +269,6 @@ class EmailControllerTest extends \PHPUnit\Framework\TestCase
 
         $request = new Request();
         $this->requestStack->push($request);
-        $this->controller->sendExampleAction($request, 1);
+        $this->controller->sendExampleAction($request, 1, $this->corePermissionsMock, $this->modelMock, $this->createMock(LeadModel::class), $this->createMock(FieldModel::class));
     }
 }

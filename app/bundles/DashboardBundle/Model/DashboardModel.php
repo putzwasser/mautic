@@ -3,6 +3,7 @@
 namespace Mautic\DashboardBundle\Model;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Mautic\CacheBundle\Cache\CacheProviderInterface;
 use Mautic\CoreBundle\Helper\CacheStorageHelper;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\CoreBundle\Helper\Filesystem;
@@ -15,6 +16,7 @@ use Mautic\CoreBundle\Translation\Translator;
 use Mautic\DashboardBundle\DashboardEvents;
 use Mautic\DashboardBundle\Entity\Widget;
 use Mautic\DashboardBundle\Entity\WidgetRepository;
+use Mautic\DashboardBundle\Event\WidgetDetailEvent;
 use Mautic\DashboardBundle\Factory\WidgetDetailEventFactory;
 use Mautic\DashboardBundle\Form\Type\WidgetType;
 use Psr\Log\LoggerInterface;
@@ -33,7 +35,7 @@ class DashboardModel extends FormModel
     public function __construct(
         CoreParametersHelper $coreParametersHelper,
         private PathsHelper $pathsHelper,
-        private WidgetDetailEventFactory $eventFactory,
+        private WidgetDetailEventFactory $widgetEventFactory,
         private Filesystem $filesystem,
         private RequestStack $requestStack,
         EntityManagerInterface $em,
@@ -42,7 +44,8 @@ class DashboardModel extends FormModel
         UrlGeneratorInterface $router,
         Translator $translator,
         UserHelper $userHelper,
-        LoggerInterface $mauticLogger
+        LoggerInterface $mauticLogger,
+        private CacheProviderInterface $cacheProvider,
     ) {
         parent::__construct($em, $security, $dispatcher, $router, $translator, $userHelper, $mauticLogger, $coreParametersHelper);
     }
@@ -141,6 +144,20 @@ class DashboardModel extends FormModel
     }
 
     /**
+     * Fill widgets with their empty content.
+     *
+     * @param array<mixed> $widgets
+     */
+    public function populateWidgetPreviews(&$widgets): void
+    {
+        if (count($widgets)) {
+            foreach ($widgets as &$widget) {
+                $this->populateWidgetPreview($widget);
+            }
+        }
+    }
+
+    /**
      * Fill widgets with their content.
      *
      * @param array $widgets
@@ -177,6 +194,16 @@ class DashboardModel extends FormModel
     }
 
     /**
+     * Populate widget preview.
+     */
+    public function populateWidgetPreview(Widget $widget): void
+    {
+        $event = $this->widgetEventFactory->create($widget);
+
+        $this->dispatcher->dispatch($event, DashboardEvents::DASHBOARD_ON_MODULE_DETAIL_PRE_LOAD);
+    }
+
+    /**
      * Load widget content from the onWidgetDetailGenerate event.
      *
      * @param array $filter
@@ -206,7 +233,7 @@ class DashboardModel extends FormModel
         $widget->setParams($resultParams);
 
         $this->dispatcher->dispatch(
-            $this->eventFactory->create($widget),
+            $this->widgetEventFactory->create($widget),
             DashboardEvents::DASHBOARD_ON_MODULE_DETAIL_GENERATE
         );
     }
@@ -220,6 +247,8 @@ class DashboardModel extends FormModel
         $cacheStorage = new CacheStorageHelper(CacheStorageHelper::ADAPTOR_FILESYSTEM, $this->userHelper->getUser()->getId(), null, $cacheDir);
 
         $cacheStorage->clear();
+
+        $this->cacheProvider->invalidateTags([WidgetDetailEvent::DASHBOARD_CACHE_TAG]);
     }
 
     /**

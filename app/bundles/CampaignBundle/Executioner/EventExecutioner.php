@@ -23,7 +23,7 @@ use Psr\Log\LoggerInterface;
 
 class EventExecutioner
 {
-    private ?\Mautic\CampaignBundle\Executioner\Result\Responses $responses = null;
+    private ?Responses $responses = null;
 
     private \DateTimeInterface $executionDate;
 
@@ -197,8 +197,10 @@ class EventExecutioner
         $logs   = $this->eventLogger->generateLogsFromContacts($event, $config, $contacts, $isInactiveEvent);
 
         // Save updated log entries and clear from memory
-        $this->eventLogger->persistCollection($logs)
-            ->clearCollection($logs);
+        if (!$logs->isEmpty()) {
+            $this->eventLogger->persistCollection($logs)
+                ->clearCollection($logs);
+        }
     }
 
     /**
@@ -208,24 +210,29 @@ class EventExecutioner
     {
         $config = $this->collector->getEventConfig($event);
         $logs   = $this->eventLogger->generateLogsFromContacts($event, $config, $contacts, $isInactiveEvent);
+        if (!$logs->isEmpty()) {
+            foreach ($logs as $log) {
+                $failedLog = new FailedLeadEventLog();
+                $failedLog->setLog($log)
+                    ->setReason($reason);
+            }
 
-        foreach ($logs as $log) {
-            $failedLog = new FailedLeadEventLog();
-            $failedLog->setLog($log)
-                ->setReason($reason);
+            // Save updated log entries and clear from memory
+            $this->eventLogger->persistCollection($logs)
+                ->clearCollection($logs);
         }
-
-        // Save updated log entries and clear from memory
-        $this->eventLogger->persistCollection($logs)
-            ->clear();
     }
 
     /**
      * @param ArrayCollection|LeadEventLog[] $logs
      * @param string                         $error
+     *
+     * @deprecated as not used
      */
     public function recordLogsWithError(ArrayCollection $logs, $error): void
     {
+        @trigger_error('EventExecutioner::recordLogsWithError() is deprecated in Mautic:4 and is removed from Mautic:5 as unused', E_USER_DEPRECATED);
+
         foreach ($logs as $log) {
             $log->appendToMetadata(
                 [
@@ -239,7 +246,7 @@ class EventExecutioner
 
         // Save updated log entries and clear from memory
         $this->eventLogger->persistCollection($logs)
-            ->clear();
+            ->clearCollection($logs);
     }
 
     /**
@@ -329,10 +336,10 @@ class EventExecutioner
     }
 
     /**
-     * @throws \Mautic\CampaignBundle\Executioner\Dispatcher\Exception\LogNotProcessedException
-     * @throws \Mautic\CampaignBundle\Executioner\Dispatcher\Exception\LogPassedAndFailedException
-     * @throws \Mautic\CampaignBundle\Executioner\Exception\CannotProcessEventException
-     * @throws \Mautic\CampaignBundle\Executioner\Scheduler\Exception\NotSchedulableException
+     * @throws Dispatcher\Exception\LogNotProcessedException
+     * @throws Dispatcher\Exception\LogPassedAndFailedException
+     * @throws Exception\CannotProcessEventException
+     * @throws Scheduler\Exception\NotSchedulableException
      */
     private function executeActionEventsForContacts(Event $event, ArrayCollection $contacts, Counter $counter = null): void
     {
@@ -351,10 +358,10 @@ class EventExecutioner
     }
 
     /**
-     * @throws \Mautic\CampaignBundle\Executioner\Dispatcher\Exception\LogNotProcessedException
-     * @throws \Mautic\CampaignBundle\Executioner\Dispatcher\Exception\LogPassedAndFailedException
-     * @throws \Mautic\CampaignBundle\Executioner\Exception\CannotProcessEventException
-     * @throws \Mautic\CampaignBundle\Executioner\Scheduler\Exception\NotSchedulableException
+     * @throws Dispatcher\Exception\LogNotProcessedException
+     * @throws Dispatcher\Exception\LogPassedAndFailedException
+     * @throws Exception\CannotProcessEventException
+     * @throws Scheduler\Exception\NotSchedulableException
      */
     private function executeConditionEventsForContacts(Event $event, ArrayCollection $contacts, Counter $counter = null): void
     {

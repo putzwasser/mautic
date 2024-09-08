@@ -50,6 +50,7 @@ class ReplySubscriber implements EventSubscriberInterface
 
         $this->eventLogRepository->saveEntity($log);
         $this->eventLogRepository->detachEntity($log);
+        $event->setEventLog($log);
     }
 
     public function onTimelineGenerate(LeadTimelineEvent $event): void
@@ -58,7 +59,7 @@ class ReplySubscriber implements EventSubscriberInterface
             $event,
             'sms_reply',
             'mautic.sms.timeline.reply',
-            'fa-mobile',
+            'ri-smartphone-line',
             'sms',
             'sms',
             'reply',
