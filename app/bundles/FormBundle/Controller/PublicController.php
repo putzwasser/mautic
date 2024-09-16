@@ -282,7 +282,7 @@ class PublicController extends CommonFormController
         ThemeHelper $themeHelper,
         int $id = 0
     ): Response {
-        $form              = $formModel->getEntity($id ?: (int) $request->get('id'));
+        $form = $formModel->getEntity($id ?: (int) $request->get('id'));
 
         if (null === $form || !$form->isPublished()) {
             return $this->notFound();
@@ -292,9 +292,9 @@ class PublicController extends CommonFormController
         $customStylesheets = (!empty($css)) ? explode(',', $css) : [];
         $template          = null;
 
-        $html    = $formModel->getContent($form);
-        $tokens  = $pageTokenHelper->findPageTokens($html);
-        $html    = str_replace(array_keys($tokens), array_values($tokens), $html);
+        $html   = $formModel->getContent($form);
+        $tokens = $pageTokenHelper->findPageTokens($html);
+        $html   = str_replace(array_keys($tokens), array_values($tokens), $html);
 
         $formModel->populateValuesWithGetParameters($form, $html);
 
@@ -321,8 +321,8 @@ class PublicController extends CommonFormController
         $viewParams['template'] = $template;
 
         if (!empty($template)) {
-            $logicalName  = $themeHelper->checkForTwigTemplate('@themes/'.$template.'/html/form.html.twig');
-            $analytics    = $analyticsHelper->getCode();
+            $logicalName = $themeHelper->checkForTwigTemplate('@themes/'.$template.'/html/form.html.twig');
+            $analytics   = $analyticsHelper->getCode();
 
             foreach ($customStylesheets as $css) {
                 $assetsHelper->addStylesheet($css);
