@@ -7,6 +7,7 @@ use Mautic\CoreBundle\Doctrine\Helper\ColumnSchemaHelper;
 use Mautic\CoreBundle\Doctrine\Helper\TableSchemaHelper;
 use Mautic\CoreBundle\Helper\Chart\ChartQuery;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use Mautic\CoreBundle\Helper\DateTime\DateTimeToken;
 use Mautic\CoreBundle\Helper\ThemeHelperInterface;
 use Mautic\CoreBundle\Helper\UserHelper;
 use Mautic\CoreBundle\Model\FormModel as CommonFormModel;
@@ -27,8 +28,10 @@ use Mautic\FormBundle\ProgressiveProfiling\DisplayManager;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Helper\FormFieldHelper as ContactFieldHelper;
 use Mautic\LeadBundle\Helper\PrimaryCompanyHelper;
+use Mautic\LeadBundle\Helper\TokenHelper as LeadTokenHelper;
 use Mautic\LeadBundle\Model\FieldModel as LeadFieldModel;
 use Mautic\LeadBundle\Tracker\ContactTracker;
+use Mautic\PageBundle\Helper\TokenHelper as PageTokenHelper;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -57,6 +60,8 @@ class FormModel extends CommonFormModel
         private ColumnSchemaHelper $columnSchemaHelper,
         private TableSchemaHelper $tableSchemaHelper,
         private MappedObjectCollectorInterface $mappedObjectCollector,
+        private PageTokenHelper $pageTokenHelper,
+        private DateTimeToken $dateTimeToken,
         EntityManagerInterface $em,
         CorePermissions $security,
         EventDispatcherInterface $dispatcher,
@@ -351,6 +356,13 @@ class FormModel extends CommonFormModel
     public function getContent(Form $form, $withScript = true, $useCache = true): string
     {
         $html = $this->getFormHtml($form, $useCache);
+
+        $lead           = $this->contactTracker->getContact();
+        $dateTimeTokens = $this->dateTimeToken->getTokens($html, $lead?->getTimezone() ?? null);
+        $pagelinkTokens = $this->pageTokenHelper->findPageTokens($html);
+        $html           = LeadTokenHelper::findLeadTokens($html, $lead?->convertToArray() ?? [], replace: true);
+        $html           = str_replace(array_keys($pagelinkTokens), array_values($pagelinkTokens), $html);
+        $html           = str_replace(array_keys($dateTimeTokens), array_values($dateTimeTokens), $html);
 
         if ($withScript) {
             $html = $this->getFormScript($form)."\n\n".$this->removeScriptTag($html);
