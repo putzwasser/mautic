@@ -262,5 +262,6 @@ return [
         'do_not_submit_emails'      => [],
         'form_results_data_sources' => false,
         'successful_submit_action'  => 'top',
+        'track_form_hits'           => false,
     ],
 ];

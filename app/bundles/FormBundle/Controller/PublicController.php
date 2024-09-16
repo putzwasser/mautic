@@ -9,8 +9,10 @@ use Mautic\FormBundle\Event\SubmissionEvent;
 use Mautic\FormBundle\Model\FieldModel;
 use Mautic\FormBundle\Model\FormModel;
 use Mautic\FormBundle\Model\SubmissionModel;
+use Mautic\LeadBundle\Helper\ContactRequestHelper;
 use Mautic\LeadBundle\Helper\TokenHelper;
 use Mautic\LeadBundle\Model\CompanyModel;
+use Mautic\PageBundle\Model\PageModel;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -271,7 +273,9 @@ class PublicController extends CommonFormController
      */
     public function previewAction(
         Request $request,
+        ContactRequestHelper $contactRequestHelper,
         FormModel $formModel,
+        PageModel $pageModel,
         $id = 0
     ) {
         $objectId          = (empty($id)) ? (int) $request->get('id') : $id;
@@ -327,6 +331,15 @@ class PublicController extends CommonFormController
             if ($form->getNoIndex()) {
                 $assetsHelper->addCustomDeclaration('<meta name="robots" content="noindex">');
             }
+        }
+
+        // TODO: How to get and populate lead to the form if the lead is already identified
+        // i.e., has cookies but WITHOUT creating a new tracked lead, so that we don't set cookies (GDPR)?
+        // Track a page hit for this form
+        if ($this->coreParametersHelper->get('track_form_hits')) {
+            $lead = $contactRequestHelper->getContactFromQuery($pageModel->getHitQuery($request, null));
+            $pageModel->hitPage(null, $request, 200, $lead);
+            $viewParams['lead'] = $template;
         }
 
         return $this->render($logicalName ?? '@MauticForm/form.html.twig', $viewParams);
