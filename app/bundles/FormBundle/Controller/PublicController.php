@@ -269,10 +269,11 @@ class PublicController extends CommonFormController
      * @throws \Exception
      * @throws \Mautic\CoreBundle\Exception\FileNotFoundException
      */
-    public function previewAction(Request $request, $id = 0)
-    {
-        $model = $this->getModel('form.form');
-        \assert($model instanceof FormModel);
+    public function previewAction(
+        Request $request,
+        FormModel $model,
+        $id = 0
+    ) {
         $objectId          = (empty($id)) ? (int) $request->get('id') : $id;
         $css               = InputHelper::string((string) $request->get('css'));
         $form              = $model->getEntity($objectId);
