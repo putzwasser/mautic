@@ -271,12 +271,12 @@ class PublicController extends CommonFormController
      */
     public function previewAction(
         Request $request,
-        FormModel $model,
+        FormModel $formModel,
         $id = 0
     ) {
         $objectId          = (empty($id)) ? (int) $request->get('id') : $id;
         $css               = InputHelper::string((string) $request->get('css'));
-        $form              = $model->getEntity($objectId);
+        $form              = $formModel->getEntity($objectId);
         $customStylesheets = (!empty($css)) ? explode(',', $css) : [];
         $template          = null;
 
@@ -284,9 +284,9 @@ class PublicController extends CommonFormController
             return $this->notFound();
         }
 
-        $html = $model->getContent($form);
+        $html = $formModel->getContent($form);
 
-        $model->populateValuesWithGetParameters($form, $html);
+        $formModel->populateValuesWithGetParameters($form, $html);
 
         $viewParams = [
             'content'     => $html,
