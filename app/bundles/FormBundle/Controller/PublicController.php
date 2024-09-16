@@ -291,7 +291,10 @@ class PublicController extends CommonFormController
         $css               = InputHelper::string((string) $request->get('css'));
         $customStylesheets = (!empty($css)) ? explode(',', $css) : [];
         $template          = null;
-        $html              = $formModel->getContent($form);
+
+        $html    = $formModel->getContent($form);
+        $tokens  = $pageTokenHelper->findPageTokens($html);
+        $html    = str_replace(array_keys($tokens), array_values($tokens), $html);
 
         $formModel->populateValuesWithGetParameters($form, $html);
 
