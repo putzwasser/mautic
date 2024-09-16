@@ -12,7 +12,6 @@ use Mautic\FormBundle\Event\SubmissionEvent;
 use Mautic\FormBundle\Model\FieldModel;
 use Mautic\FormBundle\Model\FormModel;
 use Mautic\FormBundle\Model\SubmissionModel;
-use Mautic\LeadBundle\Helper\ContactRequestHelper;
 use Mautic\LeadBundle\Helper\TokenHelper as LeadTokenHelper;
 use Mautic\LeadBundle\Model\CompanyModel;
 use Mautic\LeadBundle\Tracker\ContactTracker;
@@ -279,7 +278,6 @@ class PublicController extends CommonFormController
         PageModel $pageModel,
         AnalyticsHelper $analyticsHelper,
         AssetsHelper $assetsHelper,
-        ContactRequestHelper $contactRequestHelper,
         PageTokenHelper $pageTokenHelper,
         ThemeHelper $themeHelper,
         int $id = 0
@@ -297,15 +295,15 @@ class PublicController extends CommonFormController
         $customStylesheets = (!empty($css)) ? explode(',', $css) : [];
         $template          = null;
 
-        $html   = $formModel->getContent($form);
-        $tokens = $pageTokenHelper->findPageTokens($html);
-        $html   = str_replace(array_keys($tokens), array_values($tokens), $html);
-        $html   = LeadTokenHelper::findLeadTokens($html, $leadArray, replace: true);
+        $formHtml       = $formModel->getContent($form);
+        $pagelinkTokens = $pageTokenHelper->findPageTokens($formHtml);
+        $formHtml       = str_replace(array_keys($pagelinkTokens), array_values($pagelinkTokens), $formHtml);
+        $formHtml       = LeadTokenHelper::findLeadTokens($formHtml, $leadArray, replace: true);
 
-        $formModel->populateValuesWithGetParameters($form, $html);
+        $formModel->populateValuesWithGetParameters($form, $formHtml);
 
         $viewParams = [
-            'content'     => $html,
+            'content'     => $formHtml,
             'stylesheets' => $customStylesheets,
             'name'        => $form->getName(),
         ];
@@ -350,11 +348,11 @@ class PublicController extends CommonFormController
             $viewParams['lead'] = $lead;
         }
 
-        $response = $this->render($logicalName ?? '@MauticForm/form.html.twig', $viewParams);
-        $content  = $response->getContent();
-        $tokens   = $pageTokenHelper->findPageTokens($content);
-        $content  = str_replace(array_keys($tokens), array_values($tokens), $content);
-        $content  = LeadTokenHelper::findLeadTokens($content, $leadArray, replace: true);
+        $response       = $this->render($logicalName ?? '@MauticForm/form.html.twig', $viewParams);
+        $content        = $response->getContent();
+        $pagelinkTokens = $pageTokenHelper->findPageTokens($content);
+        $content        = str_replace(array_keys($pagelinkTokens), array_values($pagelinkTokens), $content);
+        $content        = LeadTokenHelper::findLeadTokens($content, $leadArray, replace: true);
 
         $response->setContent($content);
 
