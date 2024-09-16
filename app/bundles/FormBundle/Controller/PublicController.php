@@ -13,8 +13,9 @@ use Mautic\FormBundle\Model\FieldModel;
 use Mautic\FormBundle\Model\FormModel;
 use Mautic\FormBundle\Model\SubmissionModel;
 use Mautic\LeadBundle\Helper\ContactRequestHelper;
-use Mautic\LeadBundle\Helper\TokenHelper;
+use Mautic\LeadBundle\Helper\TokenHelper as LeadTokenHelper;
 use Mautic\LeadBundle\Model\CompanyModel;
+use Mautic\LeadBundle\Tracker\ContactTracker;
 use Mautic\PageBundle\Helper\TokenHelper as PageTokenHelper;
 use Mautic\PageBundle\Model\PageModel;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -273,6 +274,7 @@ class PublicController extends CommonFormController
      */
     public function previewAction(
         Request $request,
+        ContactTracker $contactTracker,
         FormModel $formModel,
         PageModel $pageModel,
         AnalyticsHelper $analyticsHelper,
@@ -288,6 +290,9 @@ class PublicController extends CommonFormController
             return $this->notFound();
         }
 
+        // Check for kiosk mode to prevent creating new leads
+        $lead              = $form->isInKioskMode() ? null : $contactTracker->getContact();
+        $leadArray         = $lead?->convertToArray() ?? [];
         $css               = InputHelper::string((string) $request->get('css'));
         $customStylesheets = (!empty($css)) ? explode(',', $css) : [];
         $template          = null;
@@ -295,6 +300,7 @@ class PublicController extends CommonFormController
         $html   = $formModel->getContent($form);
         $tokens = $pageTokenHelper->findPageTokens($html);
         $html   = str_replace(array_keys($tokens), array_values($tokens), $html);
+        $html   = LeadTokenHelper::findLeadTokens($html, $leadArray, replace: true);
 
         $formModel->populateValuesWithGetParameters($form, $html);
 
@@ -338,19 +344,17 @@ class PublicController extends CommonFormController
             }
         }
 
-        // TODO: How to get and populate lead to the form if the lead is already identified
-        // i.e., has cookies but WITHOUT creating a new tracked lead, so that we don't set cookies (GDPR)?
-        // Track a page hit for this form
-        if ($this->coreParametersHelper->get('track_form_hits')) {
-            $lead = $contactRequestHelper->getContactFromQuery($pageModel->getHitQuery($request, null));
+        if (false === $form->isInKioskMode()) {
             $pageModel->hitPage(null, $request, 200, $lead);
-            $viewParams['lead'] = $template;
+            // Mautic doesn't cache the rendered TWIG. Thus, we can make the lead available to `form.html.twig`.
+            $viewParams['lead'] = $lead;
         }
 
         $response = $this->render($logicalName ?? '@MauticForm/form.html.twig', $viewParams);
         $content  = $response->getContent();
         $tokens   = $pageTokenHelper->findPageTokens($content);
         $content  = str_replace(array_keys($tokens), array_values($tokens), $content);
+        $content  = LeadTokenHelper::findLeadTokens($content, $leadArray, replace: true);
 
         $response->setContent($content);
 
@@ -428,7 +432,7 @@ class PublicController extends CommonFormController
         if ($lead = $submissionEvent->getLead()) {
             $this->tokens = array_merge(
                 $submissionEvent->getTokens(),
-                TokenHelper::findLeadTokens(
+                LeadTokenHelper::findLeadTokens(
                     $string,
                     $lead->getProfileFields()
                 )
