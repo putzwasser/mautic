@@ -276,17 +276,16 @@ class PublicController extends CommonFormController
         PageTokenHelper $pageTokenHelper,
         int $id = 0
     ): Response {
-        $objectId          = $id ?: (int) $request->get('id');
-        $css               = InputHelper::string((string) $request->get('css'));
-        $form              = $formModel->getEntity($objectId);
-        $customStylesheets = (!empty($css)) ? explode(',', $css) : [];
-        $template          = null;
+        $form              = $formModel->getEntity($id ?: (int) $request->get('id'));
 
         if (null === $form || !$form->isPublished()) {
             return $this->notFound();
         }
 
-        $html = $formModel->getContent($form);
+        $css               = InputHelper::string((string) $request->get('css'));
+        $customStylesheets = (!empty($css)) ? explode(',', $css) : [];
+        $template          = null;
+        $html              = $formModel->getContent($form);
 
         $formModel->populateValuesWithGetParameters($form, $html);
 
