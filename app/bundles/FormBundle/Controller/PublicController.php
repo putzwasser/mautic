@@ -327,11 +327,9 @@ class PublicController extends CommonFormController
             if ($form->getNoIndex()) {
                 $assetsHelper->addCustomDeclaration('<meta name="robots" content="noindex">');
             }
-
-            return $this->render($logicalName, $viewParams);
         }
 
-        return $this->render('@MauticForm/form.html.twig', $viewParams);
+        return $this->render($logicalName ?? '@MauticForm/form.html.twig', $viewParams);
     }
 
     /**
