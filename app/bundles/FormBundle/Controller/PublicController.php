@@ -277,6 +277,7 @@ class PublicController extends CommonFormController
         ContactRequestHelper $contactRequestHelper,
         FormModel $formModel,
         PageModel $pageModel,
+        PageTokenHelper $pageTokenHelper,
         $id = 0
     ) {
         $objectId          = (empty($id)) ? (int) $request->get('id') : $id;
@@ -343,7 +344,14 @@ class PublicController extends CommonFormController
             $viewParams['lead'] = $template;
         }
 
-        return $this->render($logicalName ?? '@MauticForm/form.html.twig', $viewParams);
+        $response = $this->render($logicalName ?? '@MauticForm/form.html.twig', $viewParams);
+        $content  = $response->getContent();
+        $tokens   = $pageTokenHelper->findPageTokens($content);
+        $content  = str_replace(array_keys($tokens), array_values($tokens), $content);
+
+        $response->setContent($content);
+
+        return $response;
     }
 
     /**
