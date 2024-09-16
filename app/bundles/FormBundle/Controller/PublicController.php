@@ -265,10 +265,6 @@ class PublicController extends CommonFormController
     /**
      * Gives a preview of the form.
      *
-     * @param int $id
-     *
-     * @return Response
-     *
      * @throws \Exception
      * @throws \Mautic\CoreBundle\Exception\FileNotFoundException
      */
@@ -278,9 +274,9 @@ class PublicController extends CommonFormController
         FormModel $formModel,
         PageModel $pageModel,
         PageTokenHelper $pageTokenHelper,
-        $id = 0
-    ) {
-        $objectId          = (empty($id)) ? (int) $request->get('id') : $id;
+        int $id = 0
+    ): Response {
+        $objectId          = $id ?: (int) $request->get('id');
         $css               = InputHelper::string((string) $request->get('css'));
         $form              = $formModel->getEntity($objectId);
         $customStylesheets = (!empty($css)) ? explode(',', $css) : [];
