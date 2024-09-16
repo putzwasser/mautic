@@ -292,12 +292,7 @@ class PublicController extends CommonFormController
             'content'     => $html,
             'stylesheets' => $customStylesheets,
             'name'        => $form->getName(),
-            'metaRobots'  => '<meta name="robots" content="index">',
         ];
-
-        if ($form->getNoIndex()) {
-            $viewParams['metaRobots'] = '<meta name="robots" content="noindex">';
-        }
 
         // Use form specific template or system-wide default theme
         $template = $form->getTemplate() ?? $this->coreParametersHelper->get('theme');
