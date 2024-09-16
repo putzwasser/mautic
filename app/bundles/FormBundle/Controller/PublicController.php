@@ -3,6 +3,7 @@
 namespace Mautic\FormBundle\Controller;
 
 use Mautic\CoreBundle\Controller\FormController as CommonFormController;
+use Mautic\CoreBundle\Helper\DateTime\DateTimeToken;
 use Mautic\CoreBundle\Helper\InputHelper;
 use Mautic\CoreBundle\Helper\ThemeHelper;
 use Mautic\CoreBundle\Twig\Helper\AnalyticsHelper;
@@ -280,6 +281,7 @@ class PublicController extends CommonFormController
         AssetsHelper $assetsHelper,
         PageTokenHelper $pageTokenHelper,
         ThemeHelper $themeHelper,
+        DateTimeToken $dateTimeToken,
         int $id = 0
     ): Response {
         $form = $formModel->getEntity($id ?: (int) $request->get('id'));
@@ -296,8 +298,10 @@ class PublicController extends CommonFormController
         $template          = null;
 
         $formHtml       = $formModel->getContent($form);
+        $dateTimeTokens = $dateTimeToken->getTokens($formHtml, $lead?->getTimezone() ?? null);
         $pagelinkTokens = $pageTokenHelper->findPageTokens($formHtml);
         $formHtml       = str_replace(array_keys($pagelinkTokens), array_values($pagelinkTokens), $formHtml);
+        $formHtml       = str_replace(array_keys($dateTimeTokens), array_values($dateTimeTokens), $formHtml);
         $formHtml       = LeadTokenHelper::findLeadTokens($formHtml, $leadArray, replace: true);
 
         $formModel->populateValuesWithGetParameters($form, $formHtml);
@@ -351,7 +355,9 @@ class PublicController extends CommonFormController
         $response       = $this->render($logicalName ?? '@MauticForm/form.html.twig', $viewParams);
         $content        = $response->getContent();
         $pagelinkTokens = $pageTokenHelper->findPageTokens($content);
+        $dateTimeTokens = $dateTimeToken->getTokens($content, $lead?->getTimezone() ?? null);
         $content        = str_replace(array_keys($pagelinkTokens), array_values($pagelinkTokens), $content);
+        $content        = str_replace(array_keys($dateTimeTokens), array_values($dateTimeTokens), $content);
         $content        = LeadTokenHelper::findLeadTokens($content, $leadArray, replace: true);
 
         $response->setContent($content);
