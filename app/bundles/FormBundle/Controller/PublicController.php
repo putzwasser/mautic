@@ -282,33 +282,33 @@ class PublicController extends CommonFormController
 
         if (null === $form || !$form->isPublished()) {
             return $this->notFound();
-        } else {
-            $html = $model->getContent($form);
+        }
 
-            $model->populateValuesWithGetParameters($form, $html);
+        $html = $model->getContent($form);
 
-            $viewParams = [
-                'content'     => $html,
-                'stylesheets' => $customStylesheets,
-                'name'        => $form->getName(),
-                'metaRobots'  => '<meta name="robots" content="index">',
-            ];
+        $model->populateValuesWithGetParameters($form, $html);
 
-            if ($form->getNoIndex()) {
-                $viewParams['metaRobots'] = '<meta name="robots" content="noindex">';
-            }
+        $viewParams = [
+            'content'     => $html,
+            'stylesheets' => $customStylesheets,
+            'name'        => $form->getName(),
+            'metaRobots'  => '<meta name="robots" content="index">',
+        ];
 
-            // Use form specific template or system-wide default theme
-            $template = $form->getTemplate() ?? $this->coreParametersHelper->get('theme');
-            if (!empty($template)) {
-                $theme = $this->factory->getTheme($template);
-                if ($theme->getTheme() != $template) {
-                    $config = $theme->getConfig();
-                    if (in_array('form', $config['features'])) {
-                        $template = $theme->getTheme();
-                    } else {
-                        $template = null;
-                    }
+        if ($form->getNoIndex()) {
+            $viewParams['metaRobots'] = '<meta name="robots" content="noindex">';
+        }
+
+        // Use form specific template or system-wide default theme
+        $template = $form->getTemplate() ?? $this->coreParametersHelper->get('theme');
+        if (!empty($template)) {
+            $theme = $this->factory->getTheme($template);
+            if ($theme->getTheme() != $template) {
+                $config = $theme->getConfig();
+                if (in_array('form', $config['features'])) {
+                    $template = $theme->getTheme();
+                } else {
+                    $template = null;
                 }
             }
         }
