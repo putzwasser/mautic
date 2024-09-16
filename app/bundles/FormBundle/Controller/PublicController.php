@@ -4,6 +4,9 @@ namespace Mautic\FormBundle\Controller;
 
 use Mautic\CoreBundle\Controller\FormController as CommonFormController;
 use Mautic\CoreBundle\Helper\InputHelper;
+use Mautic\CoreBundle\Helper\ThemeHelper;
+use Mautic\CoreBundle\Twig\Helper\AnalyticsHelper;
+use Mautic\CoreBundle\Twig\Helper\AssetsHelper;
 use Mautic\CoreBundle\Twig\Helper\DateHelper;
 use Mautic\FormBundle\Event\SubmissionEvent;
 use Mautic\FormBundle\Model\FieldModel;
@@ -270,10 +273,13 @@ class PublicController extends CommonFormController
      */
     public function previewAction(
         Request $request,
-        ContactRequestHelper $contactRequestHelper,
         FormModel $formModel,
         PageModel $pageModel,
+        AnalyticsHelper $analyticsHelper,
+        AssetsHelper $assetsHelper,
+        ContactRequestHelper $contactRequestHelper,
         PageTokenHelper $pageTokenHelper,
+        ThemeHelper $themeHelper,
         int $id = 0
     ): Response {
         $form              = $formModel->getEntity($id ?: (int) $request->get('id'));
@@ -312,9 +318,8 @@ class PublicController extends CommonFormController
         $viewParams['template'] = $template;
 
         if (!empty($template)) {
-            $logicalName  = $this->factory->getHelper('theme')->checkForTwigTemplate('@themes/'.$template.'/html/form.html.twig');
-            $assetsHelper = $this->factory->getHelper('template.assets');
-            $analytics    = $this->factory->getHelper('twig.analytics')->getCode();
+            $logicalName  = $themeHelper->checkForTwigTemplate('@themes/'.$template.'/html/form.html.twig');
+            $analytics    = $analyticsHelper->getCode();
 
             foreach ($customStylesheets as $css) {
                 $assetsHelper->addStylesheet($css);
