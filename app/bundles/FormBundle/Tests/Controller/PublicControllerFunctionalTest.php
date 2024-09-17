@@ -7,13 +7,101 @@ namespace Mautic\FormBundle\Tests\Controller;
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use Mautic\FormBundle\Entity\Field;
 use Mautic\FormBundle\Entity\Form;
+use Mautic\FormBundle\Model\FormModel;
 use Mautic\LeadBundle\Entity\Company;
+use Mautic\LeadBundle\Tracker\ContactTracker;
+use Mautic\PageBundle\Entity\Page;
 use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 final class PublicControllerFunctionalTest extends MauticMysqlTestCase
 {
+    public function testFormPreviewWithToken(): void
+    {
+        $page = (new Page())
+            ->setTitle('Test Page')
+            ->setAlias('this-is-a-slug');
+        $this->em->persist($page);
+        $this->em->flush();
+
+        $form = new Form();
+        $form->setName('Token Test')
+            ->setAlias('token_test')
+            ->setFormType('standalone')
+            ->setPostAction('message')
+            ->setPostActionProperty('Thanks!')
+            ->setIsPublished(true);
+        // ->setCachedHtml('');
+        $form->setRenderStyle(0);
+
+        $descriptionArea = (new Field())
+            ->setForm($form)
+            ->setLabel('Description Area')
+            ->setAlias('description_area')
+            ->setType('freetext')
+            ->setProperties([
+                'text' => '<p>{today|date}</p><p>{pagelink='.$page->getId().'}</p><p>{contactfield=id}</p><p data-lead="email">{contactfield=email}</p>',
+            ]);
+
+        $this->em->persist($descriptionArea);
+
+        $form->addField(1, $descriptionArea);
+
+        $formModel = static::getContainer()->get(FormModel::class);
+        assert($formModel instanceof FormModel);
+        $formModel->saveEntity($form);
+
+        $formHtml = $form->getCachedHtml();
+        // dump($formHtml);
+
+        $this->assertStringContainsString(
+            '{pagelink='.$page->getId().'}',
+            $formHtml,
+            'Pagelink tokens should be present in the database for later substitution.'
+        );
+        $this->assertStringContainsString(
+            '{today|date}',
+            $formHtml,
+            'Date tokens should be present in the database for later substitution.'
+        );
+        $this->assertStringContainsString(
+            '{contactfield=id}',
+            $formHtml,
+            'Contactfield tokens should be present in the database for later substitution.'
+        );
+
+        $crawler = $this->client->request(Request::METHOD_GET, "/form/{$form->getId()}", []);
+
+        $formPreviewHtml = $crawler->html();
+
+        $contactTracker = static::getContainer()->get(ContactTracker::class);
+        assert($contactTracker instanceof ContactTracker);
+
+        $lead = $contactTracker->getContact();
+
+        $this->assertStringContainsString(
+            '<p>https://localhost/this-is-a-slug</p>',
+            $formPreviewHtml,
+            'Pagelink tokens should be substitutet with URL.'
+        );
+        $this->assertStringContainsString(
+            '<p>'.(new \DateTime())->format('F j, Y').'</p>',
+            $formPreviewHtml,
+            'Date tokens should substituted with config date format.'
+        );
+        $this->assertStringContainsString(
+            '<p>'.$lead->getId().'</p>',
+            $formPreviewHtml,
+            'Contactfield tokens should be substituted with lead values.'
+        );
+        $this->assertStringContainsString(
+            '<p data-lead="email"></p>',
+            $formPreviewHtml,
+            'Contactfield tokens without value should be substituted with empty string.'
+        );
+    }
+
     public function testLookupActionWithNoLookupFormField(): void
     {
         $this->makeRequest(['string' => 'Company']);
@@ -61,7 +149,8 @@ final class PublicControllerFunctionalTest extends MauticMysqlTestCase
                     'companyname'  => 'Company A',
                     'companycity'  => null,
                     'companystate' => null,
-                ], [
+                ],
+                [
                     'id'           => (string) $companyB->getId(),
                     'companyname'  => 'Company B',
                     'companycity'  => 'Boston',
